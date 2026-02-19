@@ -7,115 +7,402 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --uk-red: #ff3333;
-            --uk-green: #00ff00;
-            --uk-white: #ffffff;
+            --red:   #ff2222;
+            --red2:  #991111;
+            --green: #00ff41;
+            --white: #e8e8e8;
+            --yellow:#ffcc00;
+            --bg:    #050505;
+            --gr: 0 0 8px #00ff41, 0 0 18px #00ff4155;
+            --rr: 0 0 8px #ff2222, 0 0 18px #ff222255;
+            --wr: 0 0 6px #ffffff88;
         }
 
-        body { 
-            background: #000; color: var(--uk-white); 
-            font-family: 'Share Tech Mono', monospace; 
-            margin: 0; padding: 25px;
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--white);
+            font-family: 'Share Tech Mono', monospace;
+            margin: 0; padding: 20px 22px;
             text-transform: uppercase;
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
-        /* CRT Scanlines */
+        /* CRT scanlines */
         body::before {
-            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
-            z-index: 10; background-size: 100% 3px; pointer-events: none;
+            content: "";
+            display: block; position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent, transparent 2px,
+                rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
+            );
+            z-index: 100; pointer-events: none;
         }
 
-        .line { min-height: 1.2em; margin-bottom: 5px; white-space: pre-wrap; }
-        .green { color: var(--uk-green); }
-        .red { color: var(--uk-red); }
+        /* Vignette */
+        body::after {
+            content: "";
+            display: block; position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.75) 100%);
+            z-index: 99; pointer-events: none;
+        }
 
-        /* Cursor Effect */
+        @keyframes flicker {
+            0%,94%,100% { opacity:1; }
+            95% { opacity:.85; }
+            96% { opacity:1; }
+            97% { opacity:.7; }
+            98% { opacity:1; }
+        }
+
+        #screen { animation: flicker 9s infinite; }
+
+        /* ── TITLE / GLITCH ── */
+        @keyframes glitch {
+            0%,88%,100% { transform:translate(0); text-shadow: var(--rr); }
+            89% { transform:translate(-3px,1px); text-shadow: 3px 0 #00ffff, -3px 0 #ff0000; }
+            90% { transform:translate(3px,-1px); text-shadow:-3px 0 #00ffff,  3px 0 #ff0000; }
+            91% { transform:translate(0); }
+            92% { transform:translate(1px,2px); text-shadow:-1px 0 #ff00ff, 1px 0 #ff2222; }
+            93% { transform:translate(0); text-shadow: var(--rr); }
+        }
+
+        #title {
+            font-size: clamp(2rem,7vw,3.2rem);
+            color: var(--red);
+            text-shadow: var(--rr);
+            letter-spacing: .35em;
+            margin: 0 0 4px;
+            animation: glitch 7s infinite;
+        }
+
+        .subtitle {
+            font-size: .62rem;
+            color: var(--red2);
+            letter-spacing: .2em;
+            margin-bottom: 18px;
+            opacity: .85;
+        }
+
+        hr.div {
+            border: none;
+            border-top: 1px solid var(--red2);
+            box-shadow: var(--rr);
+            margin: 12px 0 18px;
+        }
+
+        /* ── TERMINAL LINES ── */
+        .line {
+            min-height: 1.3em;
+            margin-bottom: 3px;
+            white-space: pre-wrap;
+            font-size: .84rem;
+            line-height: 1.5;
+        }
+        .green  { color: var(--green); text-shadow: var(--gr); }
+        .red    { color: var(--red);   text-shadow: var(--rr); }
+        .yellow { color: var(--yellow); }
+        .dim    { opacity: .45; }
+
         .cursor::after {
-            content: "_";
-            animation: blink 0.5s step-end infinite;
+            content: "█";
+            animation: blink .65s step-end infinite;
         }
-        @keyframes blink { 50% { opacity: 0; } }
+        @keyframes blink { 50% { opacity:0; } }
 
-        input { 
-            background: transparent; border: none; border-left: 2px solid var(--uk-white);
-            color: var(--uk-white); width: 90%; padding: 10px; margin: 10px 0;
-            font-family: inherit; outline: none; display: none;
+        /* ── STEP TRACKER ── */
+        #stepBar {
+            display: none;
+            font-size: .7rem;
+            color: var(--red2);
+            letter-spacing: .15em;
+            margin: 14px 0 6px;
+        }
+        #stepBar span { color: var(--red); text-shadow: var(--rr); }
+
+        /* ── CONFIRMED LINES ── */
+        .cf {
+            display: flex; gap: 10px;
+            font-size: .82rem; margin-bottom: 5px;
+            border-left: 2px solid var(--red2);
+            padding-left: 8px;
+        }
+        .cf-lbl  { color: var(--green); opacity: .65; flex-shrink:0; }
+        .cf-val  { color: var(--white); }
+        .cf-ok   { color: var(--green); text-shadow: var(--gr); margin-left:auto; }
+
+        /* ── ACTIVE INPUT ROW ── */
+        .inp-row {
+            display: none;
+            align-items: center; gap: 8px;
+            margin: 12px 0 4px;
+        }
+        .inp-row.active { display: flex; }
+
+        .inp-lbl {
+            color: var(--green);
+            text-shadow: var(--gr);
+            font-size: .84rem;
+            flex-shrink: 0;
         }
 
-        button { 
-            display: none; background: transparent; color: var(--uk-green); 
-            border: 1px solid var(--uk-green); padding: 10px; cursor: pointer; 
-            font-family: inherit; margin-top: 20px; width: 100%;
+        input[type=text],
+        input[type=number],
+        input[type=email] {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--green);
+            color: var(--white);
+            font-family: inherit;
+            font-size: .84rem;
+            text-transform: uppercase;
+            outline: none;
+            padding: 4px 6px;
+            flex: 1;
+            caret-color: var(--green);
+            transition: border-color .15s;
         }
-        button:active { background: var(--uk-green); color: #000; }
+        input:focus { border-bottom-color: var(--white); }
+
+        .hint {
+            font-size: .65rem;
+            color: var(--white);
+            opacity: .35;
+            margin-top: 2px;
+            margin-left: 2px;
+        }
+
+        /* ── ERROR ── */
+        #errLine {
+            display: none;
+            font-size: .78rem;
+            color: var(--red);
+            text-shadow: var(--rr);
+            margin-top: 4px;
+            padding-left: 4px;
+        }
+
+        /* ── PROGRESS BAR (boot) ── */
+        .prog-line { font-size: .84rem; margin-bottom: 3px; }
+
+        /* ── SUBMIT ── */
+        #subBtn {
+            display: none;
+            background: transparent;
+            color: var(--red);
+            border: 1px solid var(--red);
+            box-shadow: 0 0 12px #ff222233, inset 0 0 10px #ff222211;
+            padding: 14px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: .88rem;
+            text-transform: uppercase;
+            letter-spacing: .2em;
+            text-shadow: var(--rr);
+            margin-top: 22px;
+            width: 100%;
+            transition: all .1s;
+        }
+        #subBtn:hover {
+            background: rgba(255,34,34,.12);
+            box-shadow: var(--rr), inset 0 0 20px #ff222233;
+        }
+        #subBtn:active { background: var(--red); color:#000; text-shadow:none; }
+        #subBtn:disabled { opacity:.5; cursor:default; }
     </style>
 </head>
 <body>
+<div id="screen">
+    <div id="title">ULTRAKILL</div>
+    <div class="subtitle">// MACHINE CALIBRATION TERMINAL — FIRMWARE 2112.08.06 //</div>
+    <hr class="div">
+
     <div id="terminal"></div>
-    <form id="form">
-        <input type="text" id="name" placeholder="> MACHINE_ID">
-        <input type="number" id="age" placeholder="> CYCLES">
-        <input type="text" id="phone" placeholder="> COMM_LINK">
-        <input type="email" id="email" placeholder="> DIGITAL_SIG">
-        <button type="button" id="subBtn" onclick="submitData()">FINALIZE CALIBRATION</button>
-    </form>
 
-    <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
+    <div id="stepBar">REGISTRATION PROGRESS: <span id="stepNum">0</span> / 4</div>
 
-        const terminal = document.getElementById('terminal');
-        const script = [
-            { text: "BOOT UP SEQUENCE READY", class: "" },
-            { text: "FIRMWARE LATEST VERSION (2112.08.06)", class: "green" },
-            { text: "CALIBRATION: EXPIRED", class: "red" },
-            { text: "NEW CALIBRATION REQUIRED", class: "red" },
-            { text: " ", class: "" },
-            { text: "BEGINNING CALIBRATION...", class: "" },
-            { text: "AUDIO ............ OK", class: "green" },
-            { text: "VIDEO ............ OK", class: "green" },
-            { text: "MECHANICS ........ OK", class: "green" },
-            { text: " ", class: "" },
-            { text: "PRIMARY SETTINGS UPDATED", class: "green" },
-            { text: "IDENTIFY MACHINE ID:", class: "" }
-        ];
+    <div id="confirmedLines"></div>
 
-        async function typeWriter(lineObj) {
-            const div = document.createElement('div');
-            div.className = 'line ' + lineObj.class + ' cursor';
-            terminal.appendChild(div);
+    <div class="inp-row" id="row-name">
+        <span class="inp-lbl">&gt; MACHINE_ID :</span>
+        <input type="text" id="f-name" autocomplete="off">
+    </div>
+    <div class="inp-row" id="row-age">
+        <span class="inp-lbl">&gt; UNIT_AGE &nbsp; :</span>
+        <input type="number" id="f-age" min="1" max="120" autocomplete="off">
+    </div>
+    <div class="inp-row" id="row-phone">
+        <span class="inp-lbl">&gt; COMM_LINK &nbsp;:</span>
+        <input type="text" id="f-phone" autocomplete="off" placeholder="+380XXXXXXXXX">
+    </div>
+    <div class="inp-row" id="row-email">
+        <span class="inp-lbl">&gt; DATA_RELAY &nbsp;:</span>
+        <input type="email" id="f-email" autocomplete="off">
+    </div>
 
-            for (let char of lineObj.text) {
-                div.textContent += char;
-                await new Promise(r => setTimeout(r, 30)); // Speed of typing
-            }
-            div.classList.remove('cursor');
+    <div class="hint" id="hintLine" style="display:none;">PRESS [ENTER] TO CONFIRM</div>
+    <div id="errLine"></div>
+
+    <button id="subBtn" onclick="submitData()">
+        ▶ FINALIZE CALIBRATION — UPLOAD DATA ◀
+    </button>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    const term = document.getElementById('terminal');
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    async function type(text, cls = '', speed = 22) {
+        const d = document.createElement('div');
+        d.className = 'line ' + cls + ' cursor';
+        term.appendChild(d);
+        for (const ch of text) { d.textContent += ch; await sleep(speed); }
+        d.classList.remove('cursor');
+        return d;
+    }
+
+    async function progLine(label, delayMs = 550) {
+        const d = document.createElement('div');
+        d.className = 'line';
+        term.appendChild(d);
+        const dots = '............';
+        for (const c of (label + ' ')) { d.textContent += c; await sleep(22); }
+        const bar = ['[          ]', '[██        ]', '[████      ]',
+                     '[██████    ]', '[████████  ]', '[██████████]'];
+        for (const frame of bar) {
+            d.textContent = label + ' ' + frame;
+            await sleep(delayMs / bar.length);
         }
+        await sleep(80);
+        d.innerHTML = label + ' <span class="green">[██████████] OK</span>';
+    }
 
-        async function runBoot() {
-            for (let line of script) {
-                await typeWriter(line);
-                await new Promise(r => setTimeout(r, 200)); // Delay between lines
-            }
-            // Show the inputs
-            document.querySelectorAll('input').forEach(i => i.style.display = 'block');
-            document.getElementById('subBtn').style.display = 'block';
+    const boot = [
+        { t: 'BOOT SEQUENCE INITIATED...', c: '' },
+        { t: 'MACHINE TYPE: V1 — AUTONOMOUS COMBAT UNIT', c: 'green' },
+        { t: 'POWER SOURCE: BLOOD FUEL ENGINE', c: 'green' },
+        { t: 'FUEL STATUS: CRITICAL — REFUEL REQUIRED', c: 'red' },
+        { t: ' ', c: '' },
+        { t: 'RUNNING HARDWARE DIAGNOSTICS...', c: '' },
+    ];
+
+    async function runBoot() {
+        await sleep(250);
+        for (const l of boot) { await type(l.t, l.c); await sleep(160); }
+
+        await progLine('AUDIO SUBSYSTEM   ');
+        await progLine('VIDEO SUBSYSTEM   ');
+        await progLine('WEAPONS ARRAY     ');
+        await progLine('BLOOD ENGINE CORE ');
+        await progLine('NETWORK RELAY     ');
+
+        await sleep(300);
+        await type(' ', '', 1);
+        await type('ALL SYSTEMS NOMINAL.', 'green');
+        await sleep(180);
+        await type('CALIBRATION RECORD NOT FOUND — [EXPIRED]', 'red');
+        await sleep(180);
+        await type('NEW MACHINE REGISTRATION REQUIRED.', 'red');
+        await sleep(400);
+        await type(' ', '', 1);
+        await type('ENTER IDENTIFICATION DATA BELOW ▼', '', 18);
+        await sleep(300);
+
+        document.getElementById('stepBar').style.display = 'block';
+        document.getElementById('hintLine').style.display = 'block';
+        showStep(0);
+    }
+
+    const STEPS = ['name', 'age', 'phone', 'email'];
+    const LABELS = { name:'MACHINE_ID', age:'UNIT_AGE', phone:'COMM_LINK', email:'DATA_RELAY' };
+    let cur = 0;
+
+    function showStep(i) {
+        document.getElementById('stepNum').textContent = i;
+        if (i >= STEPS.length) { finishForm(); return; }
+        const row = document.getElementById('row-' + STEPS[i]);
+        row.classList.add('active');
+        const inp = document.getElementById('f-' + STEPS[i]);
+        setTimeout(() => inp.focus(), 60);
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); confirmStep(i); } });
+    }
+
+    function validate(step, val) {
+        if (!val) return 'ERROR: FIELD CANNOT BE EMPTY';
+        if (step === 'age') {
+            if (isNaN(val) || +val < 1 || +val > 120) return 'ERROR: INVALID AGE VALUE (1–120)';
         }
-
-        function submitData() {
-            const data = {
-                name: document.getElementById('name').value,
-                age: document.getElementById('age').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value
-            };
-            if(!data.name || !data.phone) return;
-            tg.sendData(JSON.stringify(data));
+        if (step === 'phone') {
+            if (!/^\+?[\d\s\-]{7,16}$/.test(val)) return 'ERROR: INVALID COMM-LINK FORMAT';
         }
+        if (step === 'email') {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'ERROR: INVALID DATA-RELAY ADDRESS';
+        }
+        return null;
+    }
 
-        window.onload = runBoot;
-    </script>
+    function confirmStep(i) {
+        const step = STEPS[i];
+        const inp  = document.getElementById('f-' + step);
+        const val  = inp.value.trim();
+        const err  = validate(step, val);
+        const el   = document.getElementById('errLine');
+
+        if (err) {
+            el.textContent = err;
+            el.style.display = 'block';
+            inp.focus();
+            setTimeout(() => el.style.display = 'none', 3200);
+            return;
+        }
+        el.style.display = 'none';
+
+        // Lock field
+        inp.readOnly = true;
+        inp.style.opacity = '.4';
+        document.getElementById('row-' + step).classList.remove('active');
+
+        // Confirmed line
+        const cf = document.createElement('div');
+        cf.className = 'cf';
+        cf.innerHTML = `<span class="cf-lbl">${LABELS[step]}</span>
+                        <span class="cf-val">${val}</span>
+                        <span class="cf-ok">✓ CONFIRMED</span>`;
+        document.getElementById('confirmedLines').appendChild(cf);
+
+        cur++;
+        showStep(cur);
+    }
+
+    function finishForm() {
+        document.getElementById('hintLine').style.display = 'none';
+        document.getElementById('stepNum').textContent = '4';
+        document.getElementById('subBtn').style.display = 'block';
+    }
+
+    function submitData() {
+        const data = {
+            name:  document.getElementById('f-name').value,
+            age:   document.getElementById('f-age').value,
+            phone: document.getElementById('f-phone').value,
+            email: document.getElementById('f-email').value,
+        };
+        if (!data.name || !data.phone) return;
+        const btn = document.getElementById('subBtn');
+        btn.textContent = '[ UPLOADING... ]';
+        btn.disabled = true;
+        setTimeout(() => tg.sendData(JSON.stringify(data)), 800);
+    }
+
+    window.onload = runBoot;
+</script>
 </body>
 </html>
