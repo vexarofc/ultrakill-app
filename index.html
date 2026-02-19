@@ -1,36 +1,92 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #000; color: #ff0000; font-family: 'Courier New', monospace; padding: 20px; text-transform: uppercase; }
-        .glitch { font-size: 24px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #ff0000; }
-        input { background: #1a1a1a; border: 1px solid #ff0000; color: #fff; width: 100%; padding: 10px; margin: 10px 0; outline: none; }
-        button { background: #ff0000; color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; }
-        button:hover { background: #fff; }
+        body { 
+            background: #000; color: #fff; 
+            font-family: 'Courier New', Courier, monospace; 
+            margin: 0; padding: 25px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        /* CRT Scanline Effect */
+        body::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 10; background-size: 100% 3px, 3px 100%; pointer-events: none;
+        }
+        .header { color: #fff; margin-bottom: 20px; font-weight: bold; }
+        .firmware { color: #00ff00; margin-bottom: 15px; }
+        .warning { color: #ff0000; margin-bottom: 5px; }
+        .section { margin-top: 20px; }
+        
+        .row { display: flex; justify-content: space-between; width: 250px; margin-bottom: 5px; }
+        .ok { color: #00ff00; }
+
+        input { 
+            background: #000; border: none; border-bottom: 1px solid #fff;
+            color: #fff; width: 100%; padding: 8px 0; margin: 15px 0 5px 0;
+            font-family: inherit; outline: none; font-size: 14px;
+        }
+        input::placeholder { color: #444; }
+
+        .btn-container { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
+        button { 
+            background: transparent; color: #00ff00; border: 1px solid #00ff00;
+            padding: 10px 20px; cursor: pointer; font-family: inherit;
+        }
+        button:hover { background: #00ff00; color: #000; }
     </style>
 </head>
 <body>
-    <div class="glitch">V1_TERMINAL_ACCESS</div>
-    <p>IDENTIFY, MACHINE:</p>
-    <input type="text" id="name" placeholder="NAME">
-    <input type="number" id="age" placeholder="CYCLES (AGE)">
-    <input type="text" id="phone" placeholder="PHONE (+380...)">
-    <input type="email" id="email" placeholder="EMAIL">
-    <button onclick="sendData()">SEND TO HELL</button>
+    <div class="header">BOOT UP SEQUENCE READY</div>
+    
+    <div class="firmware">
+        FIRMWARE<br>
+        LATEST VERSION (2112.08.06)
+    </div>
+
+    <div class="warning">CALIBRATION: EXPIRED</div>
+    <div class="warning">NEW CALIBRATION REQUIRED</div>
+
+    <div class="section">
+        BEGINNING CALIBRATION...<br><br>
+        <div class="row"><span>AUDIO</span> <span class="ok">OK</span></div>
+        <div class="row"><span>VIDEO</span> <span class="ok">OK</span></div>
+        <div class="row"><span>MECHANICS</span> <span class="ok">OK</span></div>
+    </div>
+
+    <div class="section" style="color: #00ff00;">
+        PRIMARY SETTINGS REQUIRED:
+    </div>
+
+    <input type="text" id="name" placeholder="> MACHINE_ID (NAME)">
+    <input type="number" id="age" placeholder="> FUNCTION_CYCLES (AGE)">
+    <input type="text" id="phone" placeholder="> COMM_LINK (PHONE)">
+    <input type="email" id="email" placeholder="> DIGITAL_SIG (EMAIL)">
+
+    <div class="btn-container">
+        <button onclick="submit()">FINALIZE CALIBRATION</button>
+    </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-        function sendData() {
+        function submit() {
             let data = {
                 name: document.getElementById('name').value,
                 age: document.getElementById('age').value,
                 phone: document.getElementById('phone').value,
                 email: document.getElementById('email').value
             };
+            if(!data.name || !data.phone) { 
+                alert("CRITICAL ERROR: DATA INCOMPLETE"); 
+                return; 
+            }
             tg.sendData(JSON.stringify(data));
-            tg.close();
         }
     </script>
 </body>
