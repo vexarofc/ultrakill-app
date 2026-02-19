@@ -20,83 +20,92 @@
             overflow-x: hidden;
         }
 
-        /* CRT Overlay */
-        .crt::before {
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            z-index: 10; background-size: 100% 3px, 3px 100%; pointer-events: none;
+        /* CRT Scanlines */
+        body::before {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            z-index: 10; background-size: 100% 3px; pointer-events: none;
         }
 
-        /* Typewriter & Flicker Animations */
-        .line { opacity: 0; margin-bottom: 5px; }
-        .visible { opacity: 1; animation: flicker 0.1s steps(2) infinite alternate; }
-        
-        @keyframes flicker {
-            0% { opacity: 0.8; }
-            100% { opacity: 1; }
-        }
-
+        .line { min-height: 1.2em; margin-bottom: 5px; white-space: pre-wrap; }
         .green { color: var(--uk-green); }
-        .red { color: var(--uk-red); font-weight: bold; }
+        .red { color: var(--uk-red); }
+
+        /* Cursor Effect */
+        .cursor::after {
+            content: "_";
+            animation: blink 0.5s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
 
         input { 
-            background: transparent; border: none; border-left: 3px solid var(--uk-white);
+            background: transparent; border: none; border-left: 2px solid var(--uk-white);
             color: var(--uk-white); width: 90%; padding: 10px; margin: 10px 0;
             font-family: inherit; outline: none; display: none;
         }
 
-        .btn-ready { 
+        button { 
             display: none; background: transparent; color: var(--uk-green); 
             border: 1px solid var(--uk-green); padding: 10px; cursor: pointer; 
-            font-family: inherit; margin-top: 20px;
+            font-family: inherit; margin-top: 20px; width: 100%;
         }
-        
-        button:hover { background: var(--uk-green); color: #000; }
+        button:active { background: var(--uk-green); color: #000; }
     </style>
 </head>
-<body class="crt">
-    <div id="terminal">
-        <div class="line" id="l1">BOOT UP SEQUENCE READY</div>
-        <div class="line green" id="l2">FIRMWARE LATEST VERSION (2112.08.06)</div>
-        <div class="line red" id="l3">CALIBRATION: EXPIRED</div>
-        <div class="line red" id="l4">NEW CALIBRATION REQUIRED</div>
-        <br>
-        <div class="line" id="l5">BEGINNING CALIBRATION...</div>
-        <div class="line" id="l6">AUDIO ............ <span class="green">OK</span></div>
-        <div class="line" id="l7">VIDEO ............ <span class="green">OK</span></div>
-        <div class="line" id="l8">MECHANICS ........ <span class="green">OK</span></div>
-        <br>
-        <div class="line green" id="l9">PRIMARY SETTINGS UPDATED</div>
-        <div class="line" id="l10">IDENTIFY MACHINE ID:</div>
-    </div>
-
+<body>
+    <div id="terminal"></div>
     <form id="form">
-        <input type="text" id="name" placeholder="> NAME" required>
-        <input type="number" id="age" placeholder="> CYCLES" required>
-        <input type="text" id="phone" placeholder="> COMM_LINK" required>
-        <input type="email" id="email" placeholder="> DIGITAL_SIG" required>
-        <button type="button" class="btn-ready" id="subBtn" onclick="submitData()">FINALIZE CALIBRATION</button>
+        <input type="text" id="name" placeholder="> MACHINE_ID">
+        <input type="number" id="age" placeholder="> CYCLES">
+        <input type="text" id="phone" placeholder="> COMM_LINK">
+        <input type="email" id="email" placeholder="> DIGITAL_SIG">
+        <button type="button" id="subBtn" onclick="submitData()">FINALIZE CALIBRATION</button>
     </form>
 
     <script>
-        const lines = ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10"];
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Sequential Typewriter Effect
-        async function bootSequence() {
-            for (let id of lines) {
-                await new Promise(r => setTimeout(r, 400)); // Delay between lines
-                document.getElementById(id).classList.add('visible');
+        const terminal = document.getElementById('terminal');
+        const script = [
+            { text: "BOOT UP SEQUENCE READY", class: "" },
+            { text: "FIRMWARE LATEST VERSION (2112.08.06)", class: "green" },
+            { text: "CALIBRATION: EXPIRED", class: "red" },
+            { text: "NEW CALIBRATION REQUIRED", class: "red" },
+            { text: " ", class: "" },
+            { text: "BEGINNING CALIBRATION...", class: "" },
+            { text: "AUDIO ............ OK", class: "green" },
+            { text: "VIDEO ............ OK", class: "green" },
+            { text: "MECHANICS ........ OK", class: "green" },
+            { text: " ", class: "" },
+            { text: "PRIMARY SETTINGS UPDATED", class: "green" },
+            { text: "IDENTIFY MACHINE ID:", class: "" }
+        ];
+
+        async function typeWriter(lineObj) {
+            const div = document.createElement('div');
+            div.className = 'line ' + lineObj.class + ' cursor';
+            terminal.appendChild(div);
+
+            for (let char of lineObj.text) {
+                div.textContent += char;
+                await new Promise(r => setTimeout(r, 30)); // Speed of typing
             }
-            // Show inputs after sequence
+            div.classList.remove('cursor');
+        }
+
+        async function runBoot() {
+            for (let line of script) {
+                await typeWriter(line);
+                await new Promise(r => setTimeout(r, 200)); // Delay between lines
+            }
+            // Show the inputs
             document.querySelectorAll('input').forEach(i => i.style.display = 'block');
             document.getElementById('subBtn').style.display = 'block';
         }
 
         function submitData() {
-            let data = {
+            const data = {
                 name: document.getElementById('name').value,
                 age: document.getElementById('age').value,
                 phone: document.getElementById('phone').value,
@@ -106,7 +115,7 @@
             tg.sendData(JSON.stringify(data));
         }
 
-        window.onload = bootSequence;
+        window.onload = runBoot;
     </script>
 </body>
 </html>
