@@ -2,92 +2,111 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --uk-red: #ff3333;
+            --uk-green: #00ff00;
+            --uk-white: #ffffff;
+        }
+
         body { 
-            background: #000; color: #fff; 
-            font-family: 'Courier New', Courier, monospace; 
+            background: #000; color: var(--uk-white); 
+            font-family: 'Share Tech Mono', monospace; 
             margin: 0; padding: 25px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            overflow-x: hidden;
         }
-        /* CRT Scanline Effect */
-        body::before {
+
+        /* CRT Overlay */
+        .crt::before {
             content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
                         linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
             z-index: 10; background-size: 100% 3px, 3px 100%; pointer-events: none;
         }
-        .header { color: #fff; margin-bottom: 20px; font-weight: bold; }
-        .firmware { color: #00ff00; margin-bottom: 15px; }
-        .warning { color: #ff0000; margin-bottom: 5px; }
-        .section { margin-top: 20px; }
+
+        /* Typewriter & Flicker Animations */
+        .line { opacity: 0; margin-bottom: 5px; }
+        .visible { opacity: 1; animation: flicker 0.1s steps(2) infinite alternate; }
         
-        .row { display: flex; justify-content: space-between; width: 250px; margin-bottom: 5px; }
-        .ok { color: #00ff00; }
+        @keyframes flicker {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        .green { color: var(--uk-green); }
+        .red { color: var(--uk-red); font-weight: bold; }
 
         input { 
-            background: #000; border: none; border-bottom: 1px solid #fff;
-            color: #fff; width: 100%; padding: 8px 0; margin: 15px 0 5px 0;
-            font-family: inherit; outline: none; font-size: 14px;
+            background: transparent; border: none; border-left: 3px solid var(--uk-white);
+            color: var(--uk-white); width: 90%; padding: 10px; margin: 10px 0;
+            font-family: inherit; outline: none; display: none;
         }
-        input::placeholder { color: #444; }
 
-        .btn-container { margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
-        button { 
-            background: transparent; color: #00ff00; border: 1px solid #00ff00;
-            padding: 10px 20px; cursor: pointer; font-family: inherit;
+        .btn-ready { 
+            display: none; background: transparent; color: var(--uk-green); 
+            border: 1px solid var(--uk-green); padding: 10px; cursor: pointer; 
+            font-family: inherit; margin-top: 20px;
         }
-        button:hover { background: #00ff00; color: #000; }
+        
+        button:hover { background: var(--uk-green); color: #000; }
     </style>
 </head>
-<body>
-    <div class="header">BOOT UP SEQUENCE READY</div>
-    
-    <div class="firmware">
-        FIRMWARE<br>
-        LATEST VERSION (2112.08.06)
+<body class="crt">
+    <div id="terminal">
+        <div class="line" id="l1">BOOT UP SEQUENCE READY</div>
+        <div class="line green" id="l2">FIRMWARE LATEST VERSION (2112.08.06)</div>
+        <div class="line red" id="l3">CALIBRATION: EXPIRED</div>
+        <div class="line red" id="l4">NEW CALIBRATION REQUIRED</div>
+        <br>
+        <div class="line" id="l5">BEGINNING CALIBRATION...</div>
+        <div class="line" id="l6">AUDIO ............ <span class="green">OK</span></div>
+        <div class="line" id="l7">VIDEO ............ <span class="green">OK</span></div>
+        <div class="line" id="l8">MECHANICS ........ <span class="green">OK</span></div>
+        <br>
+        <div class="line green" id="l9">PRIMARY SETTINGS UPDATED</div>
+        <div class="line" id="l10">IDENTIFY MACHINE ID:</div>
     </div>
 
-    <div class="warning">CALIBRATION: EXPIRED</div>
-    <div class="warning">NEW CALIBRATION REQUIRED</div>
-
-    <div class="section">
-        BEGINNING CALIBRATION...<br><br>
-        <div class="row"><span>AUDIO</span> <span class="ok">OK</span></div>
-        <div class="row"><span>VIDEO</span> <span class="ok">OK</span></div>
-        <div class="row"><span>MECHANICS</span> <span class="ok">OK</span></div>
-    </div>
-
-    <div class="section" style="color: #00ff00;">
-        PRIMARY SETTINGS REQUIRED:
-    </div>
-
-    <input type="text" id="name" placeholder="> MACHINE_ID (NAME)">
-    <input type="number" id="age" placeholder="> FUNCTION_CYCLES (AGE)">
-    <input type="text" id="phone" placeholder="> COMM_LINK (PHONE)">
-    <input type="email" id="email" placeholder="> DIGITAL_SIG (EMAIL)">
-
-    <div class="btn-container">
-        <button onclick="submit()">FINALIZE CALIBRATION</button>
-    </div>
+    <form id="form">
+        <input type="text" id="name" placeholder="> NAME" required>
+        <input type="number" id="age" placeholder="> CYCLES" required>
+        <input type="text" id="phone" placeholder="> COMM_LINK" required>
+        <input type="email" id="email" placeholder="> DIGITAL_SIG" required>
+        <button type="button" class="btn-ready" id="subBtn" onclick="submitData()">FINALIZE CALIBRATION</button>
+    </form>
 
     <script>
+        const lines = ["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10"];
         let tg = window.Telegram.WebApp;
         tg.expand();
-        function submit() {
+
+        // Sequential Typewriter Effect
+        async function bootSequence() {
+            for (let id of lines) {
+                await new Promise(r => setTimeout(r, 400)); // Delay between lines
+                document.getElementById(id).classList.add('visible');
+            }
+            // Show inputs after sequence
+            document.querySelectorAll('input').forEach(i => i.style.display = 'block');
+            document.getElementById('subBtn').style.display = 'block';
+        }
+
+        function submitData() {
             let data = {
                 name: document.getElementById('name').value,
                 age: document.getElementById('age').value,
                 phone: document.getElementById('phone').value,
                 email: document.getElementById('email').value
             };
-            if(!data.name || !data.phone) { 
-                alert("CRITICAL ERROR: DATA INCOMPLETE"); 
-                return; 
-            }
+            if(!data.name || !data.phone) return;
             tg.sendData(JSON.stringify(data));
         }
+
+        window.onload = bootSequence;
     </script>
 </body>
 </html>
